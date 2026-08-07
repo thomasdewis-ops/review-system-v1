@@ -39,37 +39,41 @@
       letter-spacing: -0.3px;
     }
 
+    /* ⭐ STAR RATING — PREMIUM VERSION */
     .stars {
       display: flex;
       justify-content: center;
-      gap: 18px;
+      gap: 14px;
       margin-bottom: 28px;
-      font-size: 58px;
+      font-size: 52px;
       cursor: pointer;
+      user-select: none;
     }
 
     .star {
       color: #d2d2d7;
-      transition: color 0.18s ease-out, transform 0.18s ease-out;
-      padding: 6px;
+      transition: color 0.22s ease, transform 0.22s ease;
+      padding: 4px;
     }
 
+    .star.hovered,
     .star.active {
       color: #ffcc00;
-      transform: scale(1.18);
+      transform: scale(1.15);
     }
 
-    #dynamicArea {
-      opacity: 0;
-      transition: opacity 0.25s ease;
+    /* ⭐ FEEDBACK BOX */
+    #feedbackBox {
+      display: none;
       margin-bottom: 24px;
+      animation: fadeLift 0.35s ease-out;
     }
 
-    #dynamicArea.visible {
-      opacity: 1;
+    @keyframes fadeLift {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Elegant iOS-style textarea */
     textarea {
       width: 100%;
       height: 150px;
@@ -82,48 +86,20 @@
       outline: none;
       resize: none;
       color: #1d1d1f;
-
-      box-shadow:
-        inset 0 1px 2px rgba(0,0,0,0.06),
-        0 1px 2px rgba(0,0,0,0.04);
-
-      transition:
-        border-color 0.25s ease,
-        background 0.25s ease,
-        box-shadow 0.25s ease,
-        transform 0.25s ease;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
     }
 
     textarea::placeholder {
       color: rgba(0,0,0,0.35);
-      font-weight: 400;
-      letter-spacing: -0.2px;
     }
 
     textarea:focus {
       background: #ffffff;
       border-color: rgba(0,122,255,0.45);
-      box-shadow:
-        0 0 0 4px rgba(0,122,255,0.12),
-        inset 0 1px 2px rgba(0,0,0,0.08);
-      transform: translateY(-1px);
+      box-shadow: 0 0 0 4px rgba(0,122,255,0.12);
     }
 
-    #dynamicArea.visible textarea {
-      animation: fadeLift 0.35s ease-out;
-    }
-
-    @keyframes fadeLift {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
+    /* ⭐ BUTTON */
     button {
       padding: 16px 28px;
       font-size: 18px;
@@ -148,19 +124,83 @@
   <div class="container">
     <h2>Com'è stata la tua esperienza?</h2>
 
-    <div class="stars">
-      <span class="star" data-value="1">★</span>
-      <span class="star" data-value="2">★</span>
-      <span class="star" data-value="3">★</span>
-      <span class="star" data-value="4">★</span>
-      <span class="star" data-value="5">★</span>
-    </div>
+    <form id="ratingForm" action="https://hook.eu1.make.com/qqu1s3exnhnfe8ntxsk8dg67j41tljiv" method="post">
 
-    <div id="dynamicArea"></div>
+      <input type="hidden" name="client_id" id="client_id">
+      <input type="hidden" name="rating" id="rating">
 
-    <button id="submitBtn">Invia</button>
+      <div class="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+
+      <div id="feedbackBox">
+        <textarea name="feedback" placeholder="Lascia qui il tuo feedback"></textarea>
+      </div>
+
+      <button type="submit">Invia</button>
+    </form>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    // Extract client_id from URL
+    const clientId = window.location.pathname.split("/").pop();
+    document.getElementById("client_id").value = clientId;
+
+    const stars = document.querySelectorAll(".star");
+    const ratingInput = document.getElementById("rating");
+    const feedbackBox = document.getElementById("feedbackBox");
+
+    let lockedRating = 0;
+
+    // ⭐ HOVER cumulative highlight
+    stars.forEach(star => {
+      star.addEventListener("mouseover", () => {
+        const hoverValue = parseInt(star.dataset.value);
+
+        stars.forEach(s => {
+          const v = parseInt(s.dataset.value);
+          s.classList.toggle("hovered", v <= hoverValue);
+        });
+      });
+
+      star.addEventListener("mouseout", () => {
+        // Remove hover state
+        stars.forEach(s => s.classList.remove("hovered"));
+
+        // Restore locked rating
+        stars.forEach(s => {
+          const v = parseInt(s.dataset.value);
+          s.classList.toggle("active", v <= lockedRating);
+        });
+      });
+
+      // ⭐ CLICK locks rating
+      star.addEventListener("click", () => {
+        lockedRating = parseInt(star.dataset.value);
+        ratingInput.value = lockedRating;
+
+        // Apply locked highlight
+        stars.forEach(s => {
+          const v = parseInt(s.dataset.value);
+          s.classList.toggle("active", v <= lockedRating);
+        });
+
+        // Feedback box for 1–3 stars
+        feedbackBox.style.display = lockedRating <= 3 ? "block" : "none";
+      });
+    });
+
+    // ⭐ Prevent submission without rating
+    document.getElementById("ratingForm").addEventListener("submit", function(e) {
+      if (!ratingInput.value) {
+        e.preventDefault();
+        alert("Seleziona una valutazione prima di inviare.");
+      }
+    });
+  </script>
 </body>
 </html>
